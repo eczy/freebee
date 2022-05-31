@@ -6,6 +6,7 @@ use std::io::*;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::collections::HashMap;
+use clap::Parser;
 
 static ASCII_LOWER: [char; 26] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
@@ -26,21 +27,31 @@ RULES:
 
 type Grid = HashMap<char, Vec<u8>>;
 
-#[derive(clap::Parser)]
+#[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
-struct Cli {
+struct Args {
+    #[clap(long)]
     wordlist: PathBuf,
 }
 
 fn main() {
-    let mut wordlist = Wordlist::from_file("./wordlist.10000");
+    let args = Args::parse();
+
+    let mut wordlist = Wordlist::from_file(args.wordlist.to_str().unwrap());
     let game = wordlist.gen_game();
-    println!("{:#?}", game);
+    // println!("{:#?}", game);
     let mut input = String::new();
 
-    println!("{}, {}", &game.center_letter, &game.radial_letters.iter().collect::<String>());
-
+    let mut score = 0;
+    let mut correct_guesses: Vec<String> = vec![];
     loop {
+        println!("\nFound Words:");
+        for guess in &correct_guesses {
+            print!("{} ", guess);
+        }
+        println!("\n");
+        println!("Score: {}", score);
+        println!("{}, {}", &game.center_letter, &game.radial_letters.iter().collect::<String>());
         print!("> ");
         let _ = io::stdout().flush();
         io::stdin().read_line(&mut input).expect("Error: unable to read input");
@@ -48,11 +59,34 @@ fn main() {
         match trimmed {
             r"\rules" => println!("{}", RULES),
             r"\grid" => print_grid(&game.grid()),
+            r"\2ll" => print_two_letter_list(&game.solutions),
             r"\quit" => break,
             "" => {},
-            _ => println!("Try again."),
+            _ => {
+                if game.solutions.contains(&trimmed.to_string()) {
+                    correct_guesses.push(trimmed.to_string());
+                    if game.radial_letters.iter().all(|e| {trimmed.chars().contains(&e)}) && trimmed.chars().contains(&game.center_letter){
+                        score += 7
+
+                    }
+                    score += trimmed.len();
+                } else {
+                    println!("Try again.")
+                }
+            }
         }
         input = String::from("");
+    }
+}
+
+fn print_two_letter_list(solutions: &Vec<String>) {
+    let mut two_letter_list: HashMap<String, u8> = HashMap::new();
+    for word in solutions {
+        let first_two = word[0..2].to_string();
+        two_letter_list.entry(first_two).and_modify(|e| { *e += 1}).or_insert(1);
+    }
+    for (letters, count) in two_letter_list {
+        println!("{}: {}", letters, count);
     }
 }
 
@@ -116,7 +150,6 @@ impl Wordlist {
             if line.chars().any(|c| !ASCII_LOWER.contains(&c)) {
                 continue;
             }
-
             if line.len() < 4 {
                 continue;
             }
@@ -146,9 +179,12 @@ impl Wordlist {
         }
         radial_letters = radial_letters.into_iter().unique().collect();
         radial_letters.shuffle(&mut self.rng);
-        let mut solutions: Vec<String> = Vec::new();
+        let mut solutions: Vec<String> = vec![panagram];
         for word in self.words.iter() {
-            if word.chars().all(|c| radial_letters.contains(&c)) {
+            if !word.chars().contains(&center_letter) {
+                continue
+            }
+            if word.chars().all(|c| radial_letters.contains(&c) || center_letter == c) {
                 solutions.push(word.to_owned())
             }
         }
@@ -156,7 +192,6 @@ impl Wordlist {
             center_letter: center_letter,
             radial_letters: radial_letters,
             solutions: solutions,
-            panagram: panagram,
         }
     }
 }
@@ -166,15 +201,15 @@ struct Game {
     pub center_letter: char,
     pub radial_letters: Vec<char>,
     pub solutions: Vec<String>,
-    pub panagram: String,
 }
 
 impl Game {
     pub fn grid(&self) -> Grid {
         let mut grid = Grid::new();
-        for letter in self.panagram.chars() {
-            grid.insert(letter, Vec::new());
+        for letter in &self.radial_letters {
+            grid.insert(*letter, Vec::new());
         }
+        grid.insert(self.center_letter, Vec::new());
 
         for word in &self.solutions {
             let first = word.chars().nth(0).unwrap();
