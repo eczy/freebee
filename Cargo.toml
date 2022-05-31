@@ -17,7 +17,3 @@ path = "src/lib.rs"
 [[bin]]
 name = "freebee-cli"
 path = "src/cli/main.rs"
-
-[[bin]]
-name = "freebee-http"
-path = "src/http/main.rs"

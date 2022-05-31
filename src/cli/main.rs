@@ -21,7 +21,10 @@ RULES:
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
+    #[clap(long)]
     wordlist: PathBuf,
+
+    #[clap(long)]
     seed: Option<u64>,
 }
 
@@ -30,13 +33,12 @@ fn main() {
 
     let mut wordlist = Wordlist::from_file(args.wordlist.to_str().unwrap());
     let game = wordlist.gen_game(args.seed);
-    // println!("{:#?}", game);
     let mut input = String::new();
 
     let mut score = 0;
     let mut correct_guesses: Vec<String> = vec![];
     loop {
-        println!("\nFound Words:");
+        println!("\nFound:");
         for guess in &correct_guesses {
             print!("{} ", guess);
         }
@@ -89,9 +91,16 @@ fn print_two_letter_list(solutions: &Vec<String>) {
             .and_modify(|e| *e += 1)
             .or_insert(1);
     }
-    for (letters, count) in two_letter_list {
-        println!("{}: {}", letters, count);
+    let mut prev: char = ' ';
+    for letters in two_letter_list.keys().sorted() {
+        let first = letters.as_bytes()[0] as char;
+        if first != prev {
+            println!();
+        }
+        print!("{}: {}  ", letters, two_letter_list[letters]);
+        prev = first;
     }
+    println!();
 }
 
 fn print_grid(grid: &Grid) {
@@ -106,30 +115,27 @@ fn print_grid(grid: &Grid) {
         }
     }
 
-    print!("{:width$}", "", width = width);
+    print!("{:w$}", "", w = width);
     for i in 0..count_sums.len() {
-        print!("{:width$}", i + 4, width = width);
+        print!("{:w$}", i + 4, w = width);
     }
-    print!("{:>width$}", 'Σ', width = width);
-    print!("\n");
+    print!("{:>w$}\n", 'Σ', w = width);
 
     for (letter, counts) in grid {
-        print!("{:width$}", letter, width = width);
+        print!("{:w$}", letter, w = width);
         for i in 0..count_sums.len() {
             if i < counts.len() && counts[i] > 0 {
-                print!("{:width$}", counts[i], width = width);
+                print!("{:w$}", counts[i], w = width);
             } else {
-                print!("{:>width$}", '-', width = width)
+                print!("{:>w$}", '-', w = width)
             }
         }
-        print!("{:width$}", counts.iter().sum::<u8>(), width = width);
-        print!("\n")
+        print!("{:w$}\n", counts.iter().sum::<u8>(), w = width);
     }
 
-    print!("{:<width$}", 'Σ', width = width);
+    print!("{:<w$}", 'Σ', w = width);
     for count in &count_sums {
-        print!("{:width$}", count, width = width);
+        print!("{:w$}", count, w = width);
     }
-    print!("{:width$}", count_sums.iter().sum::<u8>(), width = width);
-    print!("\n");
+    print!("{:w$}\n", count_sums.iter().sum::<u8>(), w = width);
 }
