@@ -1,7 +1,7 @@
 use itertools::Itertools;
+use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
-use rand::{rngs::StdRng};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -63,7 +63,7 @@ impl Wordlist {
         }
         radial_letters = radial_letters.into_iter().unique().collect();
         radial_letters.shuffle(&mut rng);
-        let mut solutions: Vec<String> = vec![panagram];
+        let mut solutions: Vec<String> = vec![];
         for word in self.words.iter() {
             if !word.chars().contains(&center_letter) {
                 continue;

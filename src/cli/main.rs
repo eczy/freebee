@@ -7,6 +7,8 @@ use std::io::*;
 use std::path::PathBuf;
 
 static RULES: &str = r"
+Try to guess as many words as you can from the provided letters!
+
 RULES:
 
 1. Words must include the center letter.
@@ -18,13 +20,26 @@ RULES:
 7. Each puzzle includes at least one “pangram,” which uses every letter at least once. A pangram is worth an additional seven points.
 ";
 
+static HELP: &str = r"
+HELP:
+
+?      - display this message
+\rules - display the rules of the game
+\grid  - display a matrix letter x length for every word in the puzzle
+\2ll   - (two letter list) display a count for the number of words starting with each two letter pair
+\solve - print all solutions to the puzzle
+\quit  - exit the game
+";
+
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    #[clap(long)]
+    /// Path to wordlist.
+    #[clap(short, long)]
     wordlist: PathBuf,
 
-    #[clap(long)]
+    /// Seed for RNG. If none provided, seeds from entropy.
+    #[clap(short, long)]
     seed: Option<u64>,
 }
 
@@ -59,6 +74,14 @@ fn main() {
             r"\rules" => println!("{}", RULES),
             r"\grid" => print_grid(&game.grid()),
             r"\2ll" => print_two_letter_list(&game.solutions),
+            r"\solve" => {
+                println!("\nSolution:");
+                for sol in &game.solutions {
+                    print!("{} ", sol);
+                }
+                println!("\n");
+            }
+            r"?" => println!("{}", HELP),
             r"\quit" => break,
             "" => {}
             _ => {
