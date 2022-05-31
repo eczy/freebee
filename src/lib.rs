@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
-use rand::{rngs::StdRng, Rng};
+use rand::{rngs::StdRng};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
